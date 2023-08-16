@@ -1,0 +1,27 @@
+[package]
+name = "computercraft"
+version = "0.1.0"
+authors = ["Campbell M. Cole <pslightjs@gmail.com>"]
+edition = "2021"
+
+[lib]
+name = "computercraft"
+path = "src/lib.rs"
+
+[dependencies]
+futures-util = "0.3.28"
+serde = { version = "1.0.183", features = ["derive"] }
+serde_json = "1.0.105"
+thiserror = "1.0.46"
+tokio = { version = "1.31.0", features = ["full"] }
+tokio-tungstenite = "0.20.0"
+tracing = "0.1.37"
+uuid = { version = "1.4.1", features = ["v4", "serde"] }
+
+[dev-dependencies]
+tracing-subscriber = "0.3.17"
+
+[features]
+default = ["native-tls"]
+native-tls = ["tokio-tungstenite/native-tls"]
+rustls = ["tokio-tungstenite/rustls"]
