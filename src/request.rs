@@ -42,4 +42,10 @@ impl CCRequestInner {
 pub enum CCRequestKind {
     Echo(String),
     ConnectPeripheral(String),
+    CallPeripheral {
+        address: String,
+        method: String,
+        args: serde_json::Value,
+    },
+    GetPeripheralType(String),
 }

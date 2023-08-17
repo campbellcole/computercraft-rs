@@ -14,6 +14,12 @@ pub enum CCResponseKind {
     Disconnected,
     Echo(String),
     ConnectPeripheral(bool),
+    CallPeripheral {
+        success: bool,
+        error: Option<Vec<serde_json::Value>>,
+        result: Option<Vec<serde_json::Value>>,
+    },
+    GetPeripheralType(String),
 }
 
 #[derive(Debug, Error)]
@@ -39,6 +45,8 @@ impl CCResponse {
 
             return Err(ParseResponseError::WrongMessageType(kind));
         };
+
+        trace!("Received response: {}", text);
 
         Ok(serde_json::from_str(&text)?)
     }

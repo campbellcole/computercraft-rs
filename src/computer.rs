@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, OnceLock},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use futures_util::{SinkExt, StreamExt};
 use thiserror::Error;
@@ -15,7 +12,7 @@ use tokio_tungstenite::{tungstenite::Error as WsError, WebSocketStream};
 use uuid::Uuid;
 
 use crate::{
-    peripheral::Peripheral,
+    peripheral::{Peripheral, PeripheralCallResult},
     request::{CCRequest, CCRequestKind},
     response::{CCResponse, CCResponseKind, ParseResponseError},
 };
@@ -56,7 +53,8 @@ impl Computer {
         }
     }
 
-    pub async fn find_peripheral<'a>(&'a self, address: String) -> Option<Peripheral<'a>> {
+    pub async fn find_peripheral<'a>(&'a self, address: impl ToString) -> Option<Peripheral<'a>> {
+        let address = address.to_string();
         let connected = self.connect_peripheral(address.clone()).await?;
         if connected {
             Some(Peripheral {
@@ -74,6 +72,37 @@ impl Computer {
         resolver.await.ok()
     }
 
+    pub(crate) async fn peripheral_call_method(
+        &self,
+        address: String,
+        method: String,
+        args: serde_json::Value,
+    ) -> Option<PeripheralCallResult> {
+        match self
+            .send_raw(CCRequestKind::CallPeripheral {
+                address,
+                method,
+                args,
+            })
+            .await?
+            .response
+        {
+            CCResponseKind::Disconnected => None,
+            CCResponseKind::CallPeripheral {
+                success,
+                error,
+                result,
+            } => {
+                if success {
+                    Some(Ok(result.unwrap_or(vec![])))
+                } else {
+                    Some(Err(error.unwrap_or(vec![])))
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
     // /// Sends an Echo request to the computer and returns the response.
     // ///
     // /// Returns `None` if and only if the computer is disconnected.
@@ -89,6 +118,7 @@ impl Computer {
 impl_requests! {
     Echo = pub echo => |msg: String| -> String;
     ConnectPeripheral = connect_peripheral => |address: String| -> bool;
+    GetPeripheralType = pub(crate) get_peripheral_type => |address: String| -> String;
 }
 
 struct ComputerInner {

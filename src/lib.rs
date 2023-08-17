@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use computer::Computer;
-use request::CCRequest;
 use response::CCResponse;
 use tokio::{
     sync::{
@@ -21,6 +20,9 @@ pub mod peripheral;
 mod request;
 mod response;
 mod socket;
+
+#[cfg(feature = "peripheral-wrappers")]
+pub mod wrappers;
 
 pub struct Server {
     inner: Arc<Mutex<ServerInner>>,

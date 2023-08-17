@@ -1,11 +1,11 @@
-require "slave.controller"
+require "worker.controller"
 
 local args = { ... }
 
 local host = args[1]
 
 if not host then
-    error("Usage: slave <hostname>")
+    error("Usage: worker <hostname>")
 end
 
 local url = string.format("ws://%s:56552", host)

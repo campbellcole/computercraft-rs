@@ -1,14 +1,16 @@
 [package]
-name = "computercraft"
+name = "computercraft-rs"
 version = "0.1.0"
 authors = ["Campbell M. Cole <pslightjs@gmail.com>"]
 edition = "2021"
+license = "MIT"
 
 [lib]
 name = "computercraft"
 path = "src/lib.rs"
 
 [dependencies]
+async-trait = "0.1.73"
 futures-util = "0.3.28"
 serde = { version = "1.0.183", features = ["derive"] }
 serde_json = "1.0.105"
@@ -19,9 +21,14 @@ tracing = "0.1.37"
 uuid = { version = "1.4.1", features = ["v4", "serde"] }
 
 [dev-dependencies]
-tracing-subscriber = "0.3.17"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 
 [features]
-default = ["native-tls"]
+default = ["native-tls", "peripheral-wrappers"]
+
 native-tls = ["tokio-tungstenite/native-tls"]
 rustls = ["tokio-tungstenite/rustls"]
+
+peripheral-wrappers = []
+advanced-peripherals = ["peripheral-wrappers"]
+create-crafts-and-additions = ["peripheral-wrappers"]
