@@ -1,6 +1,6 @@
 [package]
-name = "computercraft-rs"
-version = "0.1.0"
+name = "computercraft"
+version = "0.2.0"
 authors = ["Campbell M. Cole <pslightjs@gmail.com>"]
 edition = "2021"
 license = "MIT"
@@ -24,9 +24,10 @@ erased-serde = "0.3.29"
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+computercraft = { path = ".", features = ["full"] }
 
 [features]
-default = ["native-tls", "advanced-peripherals", "fastnbt"]
+default = ["native-tls", "peripheral-wrappers"]
 
 native-tls = ["tokio-tungstenite/native-tls"]
 rustls = ["tokio-tungstenite/rustls"]
@@ -36,3 +37,5 @@ advanced-peripherals = ["peripheral-wrappers"]
 create-crafts-and-additions = ["peripheral-wrappers"]
 
 fastnbt = ["dep:fastnbt"]
+
+full = ["advanced-peripherals", "create-crafts-and-additions", "fastnbt"]

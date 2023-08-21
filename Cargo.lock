@@ -119,10 +119,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "computercraft-rs"
-version = "0.1.0"
+name = "computercraft"
+version = "0.2.0"
 dependencies = [
  "async-trait",
+ "computercraft",
  "erased-serde",
  "fastnbt",
  "futures-util",

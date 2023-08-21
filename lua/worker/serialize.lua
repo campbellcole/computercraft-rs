@@ -1,3 +1,14 @@
+-- This is a modified version of the CC: Tweaked stdlib serializer implementation.
+-- This version has the same API as 1.106.1, so it is also a polyfill.
+--
+-- The only thing that has been modified is the "recursion" handler that the old implementation had.
+-- The old recursion handler will freak out when an object is used multiple times, which is extremely
+-- common when listing large amounts of items (i.e. from refined storage or minecolonies).
+-- Instead of instantly erroring when an object is seen twice, it will return an empty object
+-- if and only if the current object has been seen more than 999 times. I chose this number arbitrarily,
+-- and I've yet to see the limit get hit. Though, it is important to prevent putting any truly recursive
+-- objects into this function because if the object contains itself it will be serialized 999 times.
+
 local expect = dofile("rom/modules/main/cc/expect.lua")
 local expect, field = expect.expect, expect.field
 

@@ -53,6 +53,7 @@ function Controller:__handle_request(request)
                 }
             }
         end
+
         local returns = { pcall(peripheral.call, address, method, table.unpack(args)) }
         local success = table.remove(returns, 1)
         local result = returns
@@ -93,7 +94,6 @@ function Controller:poll()
         -- the socket has closed, we're done here
         return false
     end
-    print(msg)
     msg = textutils.unserializeJSON(msg, { parse_empty_array = false })
 
     local id = msg.id

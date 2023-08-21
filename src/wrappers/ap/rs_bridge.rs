@@ -13,12 +13,12 @@ impl<'a> RsBridge<'a> {
     }
 
     generate_wrapped_fn!(
-        craft_item -> bool = |item: RsFilter| => craftItem(item);
+        craft_item -> bool = |item: RsFilter| => craftItem(vec![item]);
         [Value::Bool(b)] => Ok(*b)
     );
 
     generate_wrapped_fn!(
-        is_item_crafting -> bool = |item: RsFilter| => isItemCrafting(item);
+        is_item_crafting -> bool = |item: RsFilter| => isItemCrafting(vec![item]);
         [Value::Bool(b)] => Ok(*b)
     );
 

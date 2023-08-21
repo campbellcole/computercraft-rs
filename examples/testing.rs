@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let server = Server::listen();
+    let server = Server::listen_on("0.0.0.0:3389");
 
     info!("Server listening, waiting for connection...");
 
@@ -35,27 +35,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Connected. Sending echo requests...");
 
-    for i in 0..5 {
-        let received = computer.echo(format!("echo: {i}")).await?;
+    let chars_100kb = [b'x'; 100 * 1024].to_vec();
+    // let chars_128kb = [b'x'; 128 * 1024].to_vec();
+    // let chars_200kb = [b'x'; 200 * 1024].to_vec();
 
-        info!("Received: {}", received);
-    }
-
-    info!("Connecting to peripheral...");
-
-    let peripheral = computer.find_peripheral("left").await?;
-
-    let rs: RsBridge = peripheral.into_wrapped().await?;
-
-    let items = rs.list_items().await?;
-
-    println!("{items:?}");
-
-    // let colony: ColonyIntegrator = peripheral.into_wrapped().await?;
-
-    // let res = colony.get_citizens().await?;
-
-    // println!("{res:?}");
+    computer
+        .echo(String::from_utf8(chars_100kb).unwrap())
+        .await?;
+    // computer
+    //     .echo(String::from_utf8(chars_128kb).unwrap())
+    //     .await?;
+    // computer
+    //     .echo(String::from_utf8(chars_200kb).unwrap())
+    //     .await?;
 
     Ok(())
 }
