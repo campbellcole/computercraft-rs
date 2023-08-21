@@ -20,4 +20,10 @@ impl<'a> ColonyIntegrator<'a> {
         is_in_colony -> bool = | | => isInColony(Value::Null);
         [Value::Bool(b)] => Ok(*b)
     );
+
+    pub async fn get_requests(&self) -> Result<Vec<ColonyRequest>> {
+        self.inner
+            .call_method_with("getRequests", Value::Null)
+            .await
+    }
 }

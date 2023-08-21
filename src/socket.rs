@@ -1,5 +1,8 @@
 use thiserror::Error;
-use tokio::{net::TcpListener, sync::mpsc::UnboundedSender};
+use tokio::{
+    net::{TcpListener, ToSocketAddrs},
+    sync::mpsc::UnboundedSender,
+};
 use tokio_tungstenite::{accept_async, tungstenite::Error as WsError};
 
 use crate::computer::Computer;
@@ -14,15 +17,18 @@ pub enum SocketError {
     AcceptConnection(WsError),
 }
 
-pub async fn socket_thread(tx: UnboundedSender<Computer>) {
-    if let Err(e) = socket_thread_inner(tx).await {
+pub async fn socket_thread(addr: impl ToSocketAddrs, tx: UnboundedSender<Computer>) {
+    if let Err(e) = socket_thread_inner(addr, tx).await {
         error!("socket thread failed: {}", e);
     }
 }
 
-#[instrument(skip(tx))]
-pub async fn socket_thread_inner(tx: UnboundedSender<Computer>) -> Result<(), SocketError> {
-    let server = TcpListener::bind("0.0.0.0:56552")
+#[instrument(skip(addr, tx))]
+pub async fn socket_thread_inner(
+    addr: impl ToSocketAddrs,
+    tx: UnboundedSender<Computer>,
+) -> Result<(), SocketError> {
+    let server = TcpListener::bind(addr)
         .await
         .map_err(SocketError::BindError)?;
 

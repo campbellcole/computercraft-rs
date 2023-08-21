@@ -5,10 +5,11 @@ pub struct RequestedItem {
     pub count: usize,
     pub max_stack_size: usize,
     pub display_name: String,
+    #[serde(deserialize_with = "crate::wrappers::lua_compat::deserialize_with")]
     pub tags: Vec<String>,
-    #[cfg(feature = "fastnbt")]
-    pub nbt: fastnbt::Value,
-    #[cfg(not(feature = "fastnbt"))]
+    // #[cfg(feature = "fastnbt")]
+    // pub nbt: fastnbt::Value,
+    // #[cfg(not(feature = "fastnbt"))]
     pub nbt: serde_json::Value,
 }
 
@@ -22,5 +23,6 @@ pub struct ColonyRequest {
     pub count: usize,
     pub min_count: usize,
     pub target: String,
+    #[serde(deserialize_with = "crate::wrappers::lua_compat::deserialize_with")]
     pub items: Vec<RequestedItem>,
 }

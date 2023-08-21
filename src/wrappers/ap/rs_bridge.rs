@@ -16,4 +16,14 @@ impl<'a> RsBridge<'a> {
         craft_item -> bool = |item: RsFilter| => craftItem(item);
         [Value::Bool(b)] => Ok(*b)
     );
+
+    generate_wrapped_fn!(
+        is_item_crafting -> bool = |item: RsFilter| => isItemCrafting(item);
+        [Value::Bool(b)] => Ok(*b)
+    );
+
+    generate_wrapped_fn!(
+        export_item_to_peripheral -> usize = |item: RsFilter, container: impl ToString| => exportItemToPeripheral((item, container.to_string()));
+        [Value::Number(n)] => Ok(n.as_u64().unwrap() as usize)
+    );
 }

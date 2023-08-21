@@ -1,3 +1,5 @@
+require "worker.serialize"
+
 Controller = {
     ws = nil,
 }
@@ -92,7 +94,7 @@ function Controller:poll()
         return false
     end
     print(msg)
-    msg = textutils.unserialiseJSON(msg, { parse_empty_array = false })
+    msg = textutils.unserializeJSON(msg, { parse_empty_array = false })
 
     local id = msg.id
     local request = msg.request
@@ -102,7 +104,7 @@ function Controller:poll()
         id = id,
         response = res_data,
     }
-    local ser = textutils.serialiseJSON(res)
+    local ser = serializeJSON(res)
 
     self.ws.send(ser)
 

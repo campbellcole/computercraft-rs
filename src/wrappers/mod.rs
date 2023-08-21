@@ -1,3 +1,4 @@
+pub mod lua_compat;
 pub mod monitor;
 pub mod printer;
 pub mod shared;

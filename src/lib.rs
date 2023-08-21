@@ -4,6 +4,7 @@ use computer::Computer;
 use error::{Error, Result};
 use response::CCResponse;
 use tokio::{
+    net::ToSocketAddrs,
     sync::{
         mpsc::{unbounded_channel, UnboundedReceiver},
         Mutex,
@@ -33,8 +34,12 @@ pub struct Server {
 
 impl Server {
     pub fn listen() -> Self {
+        Self::listen_on("0.0.0.0:56552")
+    }
+
+    pub fn listen_on(addr: impl ToSocketAddrs + Send + 'static) -> Self {
         Self {
-            inner: Arc::new(Mutex::new(ServerInner::spawn_new())),
+            inner: Arc::new(Mutex::new(ServerInner::spawn_new(addr))),
         }
     }
 
@@ -51,9 +56,9 @@ struct ServerInner {
 }
 
 impl ServerInner {
-    pub fn spawn_new() -> Self {
+    pub fn spawn_new(addr: impl ToSocketAddrs + Send + 'static) -> Self {
         let (tx, rx) = unbounded_channel();
-        let handle = tokio::spawn(socket::socket_thread(tx));
+        let handle = tokio::spawn(socket::socket_thread(addr, tx));
         Self {
             _handle: handle,
             rx,
