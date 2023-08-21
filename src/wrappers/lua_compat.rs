@@ -3,6 +3,7 @@
 //! serde doesn't get hung up on the fact that our "array" is actually an empty object.
 
 use serde::de::{Deserialize, Deserializer, Error, Visitor};
+use serde_json::Value;
 
 #[derive(Debug)]
 pub(crate) enum EmptyVecOrEmptyObject<T> {
@@ -37,11 +38,25 @@ where
         formatter.write_str("an empty object or an array")
     }
 
-    fn visit_map<A>(self, _: A) -> Result<Self::Value, A::Error>
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: serde::de::MapAccess<'de>,
     {
-        Ok(EmptyVecOrEmptyObject::Object)
+        match map.size_hint() {
+            Some(size) if size > 0 => Err(A::Error::custom(
+                "expected an empty object, found a non-empty object",
+            )),
+            Some(size) if size == 0 => Ok(EmptyVecOrEmptyObject::Object),
+            _ => {
+                if map.next_entry::<Value, Value>()?.is_some() {
+                    Err(A::Error::custom(
+                        "expected an empty object, found a non-empty object",
+                    ))
+                } else {
+                    Ok(EmptyVecOrEmptyObject::Object)
+                }
+            }
+        }
     }
 
     fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
