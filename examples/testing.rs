@@ -12,7 +12,7 @@ use tracing_subscriber::prelude::*;
 extern crate tracing;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()
@@ -27,37 +27,38 @@ async fn main() {
 
     info!("Server listening, waiting for connection...");
 
-    let computer = server.wait_for_connection().await;
+    let computer = server.wait_for_connection().await?;
 
     info!("Connected. Sending echo requests...");
 
     for i in 0..5 {
-        let Some(received) = computer.echo(format!("echo: {i}")).await else {
-            error!("Computer disconnected before we received a response!");
-            return;
-        };
+        let received = computer.echo(format!("echo: {i}")).await?;
 
         info!("Received: {}", received);
     }
 
     info!("Connecting to monitor...");
 
-    let Some(peripheral) = computer.find_peripheral("monitor_0").await else {
-        error!("Computer disconnected or monitor not found!");
-        return;
-    };
+    let peripheral = computer.find_peripheral("monitor_0").await?;
 
     info!("Connected. Sending monitor requests...");
 
-    let monitor: Monitor = peripheral.into_wrapped().await.unwrap();
+    let monitor: Monitor = peripheral.into_wrapped().await?;
 
-    monitor.set_background_color(Color::Black).await;
-    monitor.set_text_color(Color::White).await;
-    monitor.clear().await;
-    monitor.set_cursor_pos(1, 1).await;
+    monitor.set_background_color(Color::Black).await?;
+    monitor.set_text_color(Color::White).await?;
+    monitor.clear().await?;
+    monitor.set_cursor_pos(1, 1).await?;
 
-    for color in Color::colors() {
-        monitor.set_background_color(color).await;
-        monitor.write(" ").await;
+    for (idx, color) in Color::colors().into_iter().enumerate() {
+        monitor.set_background_color(color).await?;
+        let x = idx * 2 + 1;
+
+        monitor.set_cursor_pos(x, 1).await?;
+        monitor.write("  ").await?;
+        monitor.set_cursor_pos(x, 2).await?;
+        monitor.write("  ").await?;
     }
+
+    Ok(())
 }

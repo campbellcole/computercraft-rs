@@ -15,8 +15,9 @@ A WebSocket layer for interacting with ComputerCraft from Rust. Currently only t
 Here is a short summary of features that are not yet implemented:
 
 - Documentation
-- Error handling (`unwrap()` is used profusely in leu of proper error handling)
-  - Most functions will panic if the Worker disconnects
+- Error handling ~~(`unwrap()` is used profusely in leu of proper error handling)~~
+  - ~~Most functions will panic if the Worker disconnects~~
+  - Error handling is mostly implemented, but not yet tested
 - All wrapped peripherals besides `monitor`
 - Access to CC globals (`disk`, `fs`, `os`, etc.)
 - Execution of arbitrary Lua code

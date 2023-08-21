@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use computer::Computer;
+use error::{Error, Result};
 use response::CCResponse;
 use tokio::{
     sync::{
@@ -16,6 +17,7 @@ extern crate tracing;
 extern crate serde;
 
 pub mod computer;
+pub mod error;
 pub mod peripheral;
 mod request;
 mod response;
@@ -35,10 +37,10 @@ impl Server {
         }
     }
 
-    pub async fn wait_for_connection(&self) -> Computer {
+    pub async fn wait_for_connection(&self) -> Result<Computer> {
         let mut inner = self.inner.lock().await;
-        let computer = inner.rx.recv().await.unwrap();
-        computer
+        let computer = inner.rx.recv().await.ok_or(Error::ServerThreadFailed)?;
+        Ok(computer)
     }
 }
 

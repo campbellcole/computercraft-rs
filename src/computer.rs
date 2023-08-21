@@ -12,6 +12,7 @@ use tokio_tungstenite::{tungstenite::Error as WsError, WebSocketStream};
 use uuid::Uuid;
 
 use crate::{
+    error::{Error, Result},
     peripheral::{Peripheral, PeripheralCallResult},
     request::{CCRequest, CCRequestKind},
     response::{CCResponse, CCResponseKind, ParseResponseError},
@@ -29,10 +30,10 @@ macro_rules! impl_requests {
         impl Computer {
             $(
                 $(#[$meta])?
-                $fn_vis async fn $name(&self, $($arg_ident: $arg_type),*) -> Option<$return_type> {
+                $fn_vis async fn $name(&self, $($arg_ident: $arg_type),*) -> Result<$return_type> {
                     match self.send_raw(CCRequestKind::$variant($($arg_ident),*)).await?.response {
-                        CCResponseKind::Disconnected => None,
-                        CCResponseKind::$variant(res) => Some(res),
+                        CCResponseKind::Disconnected => Err(Error::Disconnected),
+                        CCResponseKind::$variant(res) => Ok(res),
                         _ => unreachable!("request was resolved with a response of the wrong kind!"),
                     }
                 }
@@ -53,23 +54,26 @@ impl Computer {
         }
     }
 
-    pub async fn find_peripheral<'a>(&'a self, address: impl ToString) -> Option<Peripheral<'a>> {
+    pub async fn find_peripheral(&self, address: impl ToString) -> Result<Peripheral<'_>> {
         let address = address.to_string();
         let connected = self.connect_peripheral(address.clone()).await?;
         if connected {
-            Some(Peripheral {
+            Ok(Peripheral {
                 computer: self,
                 address,
             })
         } else {
-            None
+            Err(Error::PeripheralNotFound(address))
         }
     }
 
-    async fn send_raw(&self, kind: CCRequestKind) -> Option<CCResponse> {
+    async fn send_raw(&self, kind: CCRequestKind) -> Result<CCResponse> {
         let (request, resolver) = CCRequest::new(kind);
-        self.inner.tx.send(request).ok()?;
-        resolver.await.ok()
+        self.inner
+            .tx
+            .send(request)
+            .map_err(|_| Error::ComputerThreadFailed)?;
+        resolver.await.map_err(|_| Error::ResolverDropped)
     }
 
     pub(crate) async fn peripheral_call_method(
@@ -77,7 +81,7 @@ impl Computer {
         address: String,
         method: String,
         args: serde_json::Value,
-    ) -> Option<PeripheralCallResult> {
+    ) -> PeripheralCallResult {
         match self
             .send_raw(CCRequestKind::CallPeripheral {
                 address,
@@ -87,16 +91,16 @@ impl Computer {
             .await?
             .response
         {
-            CCResponseKind::Disconnected => None,
+            CCResponseKind::Disconnected => Err(Error::Disconnected),
             CCResponseKind::CallPeripheral {
                 success,
                 error,
                 result,
             } => {
                 if success {
-                    Some(Ok(result.unwrap_or(vec![])))
+                    Ok(result.unwrap_or_default())
                 } else {
-                    Some(Err(error.unwrap_or(vec![])))
+                    Err(Error::LuaError(error.unwrap_or_default()))
                 }
             }
             _ => unreachable!(),

@@ -25,7 +25,7 @@ impl TryFrom<f64> for MonitorScale {
             return Err(TryParseMonitorScaleError::MustBeMultipleOfOneHalf);
         }
 
-        if value < 0.5 || value > 5.0 {
+        if !(0.5..=5.0).contains(&value) {
             return Err(TryParseMonitorScaleError::OutOfRange);
         }
 
