@@ -102,7 +102,7 @@ function Controller:poll()
         id = id,
         response = res_data,
     }
-    local ser = textutils.serialiseJSON(res, { unicode_strings = true })
+    local ser = textutils.serialiseJSON(res)
 
     self.ws.send(ser)
 

@@ -17,6 +17,10 @@ macro_rules! define_colors {
                     $(Color::$name),*
                 ]
             }
+
+            pub fn into_u64(self) -> u64 {
+                self.into()
+            }
         }
 
         impl TryFrom<u64> for Color {

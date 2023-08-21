@@ -1,12 +1,4 @@
-use async_trait::async_trait;
-use serde_json::Value;
-
-use crate::{
-    error::Result,
-    peripheral::{generate_wrapper_impl, IntoWrappedPeripheral, Peripheral},
-};
-
-use super::shared::color::Color;
+use super::prelude::*;
 
 mod monitor_scale;
 pub use monitor_scale::*;
@@ -14,164 +6,80 @@ pub use monitor_scale::*;
 generate_wrapper_impl!(Monitor = "monitor");
 
 impl<'a> Monitor<'a> {
-    pub async fn set_text_scale(&self, scale: MonitorScale) -> Result<()> {
-        self.inner.call_method("setTextScale", scale).await?;
+    generate_wrapped_fn!(set_text_scale -> void = |scale: MonitorScale| => setTextScale(scale));
 
-        Ok(())
-    }
+    generate_wrapped_fn!(
+        get_text_scale -> MonitorScale = | | => getTextScale(Value::Null);
+        [Value::Number(n)] => Ok(MonitorScale(n.as_f64().unwrap()))
+    );
 
-    pub async fn get_text_scale(&self) -> Result<MonitorScale> {
-        match &self.inner.call_method("getTextScale", Value::Null).await?[..] {
-            [Value::Number(n)] => Ok(MonitorScale(n.as_f64().unwrap())),
-            _ => unreachable!(),
+    generate_wrapped_fn!(write -> void = |text: impl ToString| => write(text.to_string()));
+
+    generate_wrapped_fn!(scroll -> void = |y: usize| => scroll(y));
+
+    generate_wrapped_fn!(
+        get_cursor_pos -> (usize, usize) = | | => getCursorPos(Value::Null);
+        [Value::Number(x), Value::Number(y)] => {
+            Ok((x.as_u64().unwrap() as usize, y.as_u64().unwrap() as usize))
         }
-    }
+    );
 
-    pub async fn write(&self, text: &str) -> Result<()> {
-        self.inner.call_method("write", text).await?;
+    generate_wrapped_fn!(set_cursor_pos -> void = |x: usize, y: usize| => setCursorPos(vec![x, y]));
 
-        Ok(())
-    }
+    generate_wrapped_fn!(
+        get_cursor_blink -> bool = | | => getCursorBlink(Value::Null);
+        [Value::Bool(b)] => Ok(*b)
+    );
 
-    pub async fn scroll(&self, y: usize) -> Result<()> {
-        self.inner.call_method("scroll", y).await?;
+    generate_wrapped_fn!(set_cursor_blink -> void = |blink: bool| => setCursorBlink(blink));
 
-        Ok(())
-    }
-
-    pub async fn get_cursor_pos(&self) -> Result<(usize, usize)> {
-        match &self.inner.call_method("getCursorPos", Value::Null).await?[..] {
-            [Value::Number(x), Value::Number(y)] => {
-                Ok((x.as_u64().unwrap() as usize, y.as_u64().unwrap() as usize))
-            }
-            _ => unreachable!(),
+    generate_wrapped_fn!(
+        get_size -> (usize, usize) = | | => getSize(Value::Null);
+        [Value::Number(x), Value::Number(y)] => {
+            Ok((x.as_u64().unwrap() as usize, y.as_u64().unwrap() as usize))
         }
-    }
+    );
 
-    pub async fn set_cursor_pos(&self, x: usize, y: usize) -> Result<()> {
-        self.inner.call_method("setCursorPos", vec![x, y]).await?;
+    generate_wrapped_fn!(clear -> void = | | => clear(Value::Null));
 
-        Ok(())
-    }
+    generate_wrapped_fn!(clear_line -> void = | | => clearLine(Value::Null));
 
-    pub async fn get_cursor_blink(&self) -> Result<bool> {
-        match &self
-            .inner
-            .call_method("getCursorBlink", Value::Null)
-            .await?[..]
-        {
-            [Value::Bool(b)] => Ok(*b),
-            _ => unreachable!(),
-        }
-    }
+    generate_wrapped_fn!(
+        get_text_color -> Color = | | => getTextColor(Value::Null);
+        [Value::Number(n)] => Ok(n.as_u64().unwrap().try_into().unwrap())
+    );
 
-    pub async fn set_cursor_blink(&self, blink: bool) -> Result<()> {
-        self.inner.call_method("setCursorBlink", blink).await?;
+    generate_wrapped_fn!(set_text_color -> void = |color: Color| => setTextColor(color.into_u64()));
 
-        Ok(())
-    }
+    generate_wrapped_fn!(
+        get_background_color -> Color = | | => getBackgroundColor(Value::Null);
+        [Value::Number(n)] => Ok(n.as_u64().unwrap().try_into().unwrap())
+    );
 
-    pub async fn get_size(&self) -> Result<(usize, usize)> {
-        match &self.inner.call_method("getSize", Value::Null).await?[..] {
-            [Value::Number(x), Value::Number(y)] => {
-                Ok((x.as_u64().unwrap() as usize, y.as_u64().unwrap() as usize))
-            }
-            _ => unreachable!(),
-        }
-    }
+    generate_wrapped_fn!(set_background_color -> void = |color: Color| => setBackgroundColor(color.into_u64()));
 
-    pub async fn clear(&self) -> Result<()> {
-        self.inner.call_method("clear", Value::Null).await?;
+    generate_wrapped_fn!(
+        is_color -> bool = | | => isColor(Value::Null);
+        [Value::Bool(b)] => Ok(*b)
+    );
 
-        Ok(())
-    }
+    generate_wrapped_fn!(blit -> void = |text: impl ToString, text_color: impl ToString, background_color: impl ToString| => blit(vec![text.to_string(), text_color.to_string(), background_color.to_string()]));
 
-    pub async fn clear_line(&self) -> Result<()> {
-        self.inner.call_method("clearLine", Value::Null).await?;
+    generate_wrapped_fn!(set_palette_color -> void = |color: Color, value: u32| => setPaletteColor(vec![Value::from(color), Value::from(value)]));
 
-        Ok(())
-    }
+    generate_wrapped_fn!(set_palette_color_rgb -> void = |color: Color, r: f64, g: f64, b: f64| => setPaletteColor(vec![
+        Value::from(color),
+        Value::from(r),
+        Value::from(g),
+        Value::from(b)
+    ]));
 
-    pub async fn get_text_color(&self) -> Result<Color> {
-        match &self.inner.call_method("getTextColor", Value::Null).await?[..] {
-            [Value::Number(n)] => Ok(n.as_u64().unwrap().try_into().unwrap()),
-            _ => unreachable!(),
-        }
-    }
-
-    pub async fn set_text_color(&self, color: Color) -> Result<()> {
-        self.inner.call_method("setTextColor", color).await?;
-
-        Ok(())
-    }
-
-    pub async fn get_background_color(&self) -> Result<Color> {
-        match &self
-            .inner
-            .call_method("getBackgroundColor", Value::Null)
-            .await?[..]
-        {
-            [Value::Number(n)] => Ok(n.as_u64().unwrap().try_into().unwrap()),
-            _ => unreachable!(),
-        }
-    }
-
-    pub async fn set_background_color(&self, color: Color) -> Result<()> {
-        self.inner.call_method("setBackgroundColor", color).await?;
-
-        Ok(())
-    }
-
-    pub async fn is_color(&self) -> Result<bool> {
-        match &self.inner.call_method("isColor", Value::Null).await?[..] {
-            [Value::Bool(b)] => Ok(*b),
-            _ => unreachable!(),
-        }
-    }
-
-    pub async fn blit(&self, text: &str, text_color: &str, background_color: &str) -> Result<()> {
-        self.inner
-            .call_method("blit", vec![text, text_color, background_color])
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn set_palette_color(&self, color: Color, value: u32) -> Result<()> {
-        self.inner
-            .call_method(
-                "setPaletteColor",
-                vec![Value::from(color), Value::from(value)],
-            )
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn set_palette_color_rgb(&self, color: Color, r: f64, g: f64, b: f64) -> Result<()> {
-        self.inner
-            .call_method(
-                "setPaletteColor",
-                vec![
-                    Value::from(color),
-                    Value::from(r),
-                    Value::from(g),
-                    Value::from(b),
-                ],
-            )
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn get_palette_color(&self, color: Color) -> Result<(f64, f64, f64)> {
-        match &self.inner.call_method("getPaletteColor", color).await?[..] {
-            [Value::Number(r), Value::Number(g), Value::Number(b)] => Ok((
-                r.as_f64().unwrap(),
-                g.as_f64().unwrap(),
-                b.as_f64().unwrap(),
-            )),
-            _ => unreachable!(),
-        }
-    }
+    generate_wrapped_fn!(
+        get_palette_color -> (f64, f64, f64) = |color: Color| => getPaletteColor(color.into_u64());
+        [Value::Number(r), Value::Number(g), Value::Number(b)] => Ok((
+            r.as_f64().unwrap(),
+            g.as_f64().unwrap(),
+            b.as_f64().unwrap()
+        ))
+    );
 }

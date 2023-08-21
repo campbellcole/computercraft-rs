@@ -1,7 +1,7 @@
 use serde_json::Value;
 use thiserror::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonitorScale(pub(super) f64);
 
 impl MonitorScale {

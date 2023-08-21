@@ -3,7 +3,11 @@
 
 use computercraft::{
     peripheral::IntoWrappedPeripheral,
-    wrappers::{monitor::Monitor, shared::color::Color},
+    wrappers::{
+        ap::{colony_integrator::ColonyIntegrator, rs_bridge::RsBridge},
+        monitor::Monitor,
+        shared::color::Color,
+    },
     Server,
 };
 use tracing_subscriber::prelude::*;
@@ -37,28 +41,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("Received: {}", received);
     }
 
-    info!("Connecting to monitor...");
+    info!("Connecting to peripheral...");
 
-    let peripheral = computer.find_peripheral("monitor_0").await?;
+    let peripheral = computer.find_peripheral("left").await?;
 
-    info!("Connected. Sending monitor requests...");
+    let rs: RsBridge = peripheral.into_wrapped().await?;
 
-    let monitor: Monitor = peripheral.into_wrapped().await?;
+    let items = rs.list_items().await?;
 
-    monitor.set_background_color(Color::Black).await?;
-    monitor.set_text_color(Color::White).await?;
-    monitor.clear().await?;
-    monitor.set_cursor_pos(1, 1).await?;
+    println!("{items:?}");
 
-    for (idx, color) in Color::colors().into_iter().enumerate() {
-        monitor.set_background_color(color).await?;
-        let x = idx * 2 + 1;
+    // let colony: ColonyIntegrator = peripheral.into_wrapped().await?;
 
-        monitor.set_cursor_pos(x, 1).await?;
-        monitor.write("  ").await?;
-        monitor.set_cursor_pos(x, 2).await?;
-        monitor.write("  ").await?;
-    }
+    // let res = colony.get_citizens().await?;
+
+    // println!("{res:?}");
 
     Ok(())
 }

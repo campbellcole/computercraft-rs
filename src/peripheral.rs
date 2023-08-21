@@ -1,7 +1,8 @@
 use async_trait::async_trait;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use crate::{computer::Computer, error::Result};
+use crate::{computer::Computer, error::Result, request::PeripheralArgs};
 
 pub struct Peripheral<'a> {
     pub(crate) computer: &'a Computer,
@@ -9,13 +10,33 @@ pub struct Peripheral<'a> {
 }
 
 impl<'a> Peripheral<'a> {
-    pub async fn call_method(
+    pub async fn call_method<S: PeripheralArgs>(
         &self,
         method: impl Into<String>,
-        args: impl Into<Value>,
+        args: S,
     ) -> PeripheralCallResult {
         self.computer
-            .peripheral_call_method(self.address.clone(), method.into(), args.into())
+            .peripheral_call_method(self.address.clone(), method.into(), args)
+            .await
+    }
+
+    pub async fn call_method_with<S: PeripheralArgs, T: DeserializeOwned>(
+        &self,
+        method: impl Into<String>,
+        args: S,
+    ) -> Result<T> {
+        self.computer
+            .peripheral_call_into(self.address.clone(), method.into(), args)
+            .await
+    }
+
+    pub async fn call_method_with_raw<S: PeripheralArgs, T: DeserializeOwned>(
+        &self,
+        method: impl Into<String>,
+        args: S,
+    ) -> Result<T> {
+        self.computer
+            .peripheral_call_into_raw(self.address.clone(), method.into(), args)
             .await
     }
 }

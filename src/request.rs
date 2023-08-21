@@ -1,3 +1,6 @@
+use std::fmt::Debug;
+
+use erased_serde::{serialize_trait_object, Serialize};
 use tokio::sync::oneshot;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
@@ -25,7 +28,7 @@ impl CCRequest {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 pub(crate) struct CCRequestInner {
     pub(crate) id: Uuid,
     pub(crate) request: CCRequestKind,
@@ -37,7 +40,7 @@ impl CCRequestInner {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "kind", content = "data")]
 pub enum CCRequestKind {
     Echo(String),
@@ -45,7 +48,13 @@ pub enum CCRequestKind {
     CallPeripheral {
         address: String,
         method: String,
-        args: serde_json::Value,
+        args: Box<dyn PeripheralArgs>,
     },
     GetPeripheralType(String),
 }
+
+pub trait PeripheralArgs: Serialize + Debug + Send + Sync + 'static {}
+
+impl<T: Serialize + Debug + Send + Sync + 'static> PeripheralArgs for T {}
+
+serialize_trait_object!(PeripheralArgs);

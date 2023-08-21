@@ -1,6 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use futures_util::{SinkExt, StreamExt};
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 use thiserror::Error;
 use tokio::{
     net::TcpStream,
@@ -14,7 +16,7 @@ use uuid::Uuid;
 use crate::{
     error::{Error, Result},
     peripheral::{Peripheral, PeripheralCallResult},
-    request::{CCRequest, CCRequestKind},
+    request::{CCRequest, CCRequestKind, PeripheralArgs},
     response::{CCResponse, CCResponseKind, ParseResponseError},
 };
 
@@ -76,17 +78,17 @@ impl Computer {
         resolver.await.map_err(|_| Error::ResolverDropped)
     }
 
-    pub(crate) async fn peripheral_call_method(
+    pub(crate) async fn peripheral_call_method<S: PeripheralArgs>(
         &self,
         address: String,
         method: String,
-        args: serde_json::Value,
+        args: S,
     ) -> PeripheralCallResult {
         match self
             .send_raw(CCRequestKind::CallPeripheral {
                 address,
                 method,
-                args,
+                args: Box::new(args),
             })
             .await?
             .response
@@ -105,6 +107,30 @@ impl Computer {
             }
             _ => unreachable!(),
         }
+    }
+
+    pub(crate) async fn peripheral_call_into<S: PeripheralArgs, T: DeserializeOwned>(
+        &self,
+        address: String,
+        method: String,
+        args: S,
+    ) -> Result<T> {
+        match &self.peripheral_call_method(address, method, args).await?[..] {
+            [val] => Ok(T::deserialize(val)?),
+            [] => Err(Error::NoReturnValues),
+            _ => Err(Error::MultipleReturnValues),
+        }
+    }
+
+    pub(crate) async fn peripheral_call_into_raw<S: PeripheralArgs, T: DeserializeOwned>(
+        &self,
+        address: String,
+        method: String,
+        args: S,
+    ) -> Result<T> {
+        let val = Value::Array(self.peripheral_call_method(address, method, args).await?);
+
+        Ok(T::deserialize(val)?)
     }
 
     // /// Sends an Echo request to the computer and returns the response.

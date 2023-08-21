@@ -9,8 +9,8 @@ pub enum Error {
     PeripheralNotFound(String),
     #[error("Peripheral is of type {0:?}, expected {1:?}")]
     WrongPeripheralType(String, String),
-    #[error("Lua function returned data in an unexpected format")]
-    UnexpectedData,
+    #[error("Lua function returned data in an unexpected format: {0:?}")]
+    UnexpectedData(Vec<Value>),
     #[error("Lua function returned an error: {0:?}")]
     LuaError(Vec<Value>),
     #[error("Error interacting with websocket: {0}")]
@@ -23,6 +23,12 @@ pub enum Error {
     ComputerThreadFailed,
     #[error("Request resolver was dropped before resolving")]
     ResolverDropped,
+    #[error("Cannot deserialize returned data because there are multiple return values")]
+    MultipleReturnValues,
+    #[error("Cannot deserialize returned data because the function returned nothing")]
+    NoReturnValues,
+    #[error("Failed to deserialize returned data: {0}")]
+    SerdeError(#[from] serde_json::Error),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

@@ -19,12 +19,14 @@ tokio = { version = "1.31.0", features = ["full"] }
 tokio-tungstenite = "0.20.0"
 tracing = "0.1.37"
 uuid = { version = "1.4.1", features = ["v4", "serde"] }
+fastnbt = { version = "2", optional = true }
+erased-serde = "0.3.29"
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 
 [features]
-default = ["native-tls", "peripheral-wrappers"]
+default = ["native-tls", "advanced-peripherals", "fastnbt"]
 
 native-tls = ["tokio-tungstenite/native-tls"]
 rustls = ["tokio-tungstenite/rustls"]
@@ -32,3 +34,5 @@ rustls = ["tokio-tungstenite/rustls"]
 peripheral-wrappers = []
 advanced-peripherals = ["peripheral-wrappers"]
 create-crafts-and-additions = ["peripheral-wrappers"]
+
+fastnbt = ["dep:fastnbt"]
