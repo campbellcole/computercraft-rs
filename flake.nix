@@ -23,6 +23,7 @@
             clang
             rust-analyzer
             craftos-pc
+            cargo-expand
           ];
 
           buildInputs = [

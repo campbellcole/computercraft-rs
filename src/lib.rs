@@ -19,6 +19,7 @@ extern crate serde;
 pub mod computer;
 pub mod error;
 pub mod peripheral;
+pub mod protocol;
 mod request;
 mod response;
 mod socket;
