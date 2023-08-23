@@ -2,6 +2,8 @@ use thiserror::Error;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
+use crate::computer::ComputerInfo;
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CCResponse {
     pub(crate) id: Uuid,
@@ -11,6 +13,7 @@ pub struct CCResponse {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "kind", content = "data")]
 pub enum CCResponseKind {
+    Handshake(ComputerInfo),
     Disconnected,
     Echo(String),
     ConnectPeripheral(bool),
@@ -35,7 +38,12 @@ impl CCResponse {
         let Message::Text(text) = msg else {
             let kind = match msg {
                 Message::Binary(_) => "binary",
-                Message::Close(_) => "close",
+                Message::Close(_) => {
+                    return Ok(Self {
+                        id: Uuid::nil(),
+                        response: CCResponseKind::Disconnected,
+                    })
+                }
                 Message::Ping(_) => "ping",
                 Message::Pong(_) => "pong",
                 Message::Frame(_) => "frame",

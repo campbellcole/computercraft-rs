@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, OnceLock},
+};
 
 use futures_util::{SinkExt, StreamExt};
 use serde::de::DeserializeOwned;
@@ -22,6 +25,7 @@ use crate::{
 
 pub struct Computer {
     inner: Arc<ComputerInner>,
+    computer_info: OnceLock<ComputerInfo>,
 }
 
 macro_rules! impl_requests {
@@ -45,15 +49,34 @@ macro_rules! impl_requests {
 }
 
 impl Computer {
-    pub(crate) fn new(ws: WebSocketStream<TcpStream>) -> Self {
+    pub(crate) async fn new(ws: WebSocketStream<TcpStream>) -> Result<Self> {
         let (tx, rx) = unbounded_channel();
         let handle = tokio::spawn(computer_thread(ws, rx));
-        Self {
-            inner: Arc::new(ComputerInner {
-                _handle: handle,
-                tx,
-            }),
+        let mut inst = Self {
+            inner: Arc::new(ComputerInner { handle, tx }),
+            computer_info: OnceLock::new(),
+        };
+
+        inst.handshake().await?;
+
+        Ok(inst)
+    }
+
+    async fn handshake(&mut self) -> Result<()> {
+        let shake = self.send_raw(CCRequestKind::Handshake).await?;
+        match shake.response {
+            CCResponseKind::Handshake(info) => {
+                self.computer_info
+                    .set(info)
+                    .map_err(|_| Error::HandShookTwice)?;
+                Ok(())
+            }
+            _ => Err(Error::WrongResponseType(shake)),
         }
+    }
+
+    pub fn computer_info(&self) -> Result<&ComputerInfo> {
+        self.computer_info.get().ok_or(Error::HandshakeFailed)
     }
 
     pub async fn find_peripheral(&self, address: impl ToString) -> Result<Peripheral<'_>> {
@@ -84,15 +107,14 @@ impl Computer {
         method: String,
         args: S,
     ) -> PeripheralCallResult {
-        match self
+        let res = self
             .send_raw(CCRequestKind::CallPeripheral {
                 address,
                 method,
                 args: Box::new(args),
             })
-            .await?
-            .response
-        {
+            .await?;
+        match res.response {
             CCResponseKind::Disconnected => Err(Error::Disconnected),
             CCResponseKind::CallPeripheral {
                 success,
@@ -105,7 +127,7 @@ impl Computer {
                     Err(Error::LuaError(error.unwrap_or_default()))
                 }
             }
-            _ => unreachable!(),
+            _ => Err(Error::WrongResponseType(res)),
         }
     }
 
@@ -132,17 +154,6 @@ impl Computer {
 
         Ok(T::deserialize(val)?)
     }
-
-    // /// Sends an Echo request to the computer and returns the response.
-    // ///
-    // /// Returns `None` if and only if the computer is disconnected.
-    // pub async fn echo(&self, msg: String) -> Option<String> {
-    //     match self.send_raw(CCRequestKind::Echo(msg)).await?.response {
-    //         CCResponseKind::Echo(msg) => Some(msg),
-    //         CCResponseKind::Disconnected => None,
-    //         _ => unreachable!("request was resolved with a response of the wrong kind!"),
-    //     }
-    // }
 }
 
 impl_requests! {
@@ -151,9 +162,31 @@ impl_requests! {
     GetPeripheralType = pub(crate) get_peripheral_type => |address: String| -> String;
 }
 
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub enum ComputerKind {
+    Computer,
+    Turtle,
+    Pocket,
+    Command,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ComputerInfo {
+    pub name: Option<String>,
+    pub kind: ComputerKind,
+    pub advanced: bool,
+}
+
 struct ComputerInner {
-    _handle: JoinHandle<()>,
+    handle: JoinHandle<()>,
     tx: UnboundedSender<CCRequest>,
+}
+
+impl Drop for ComputerInner {
+    fn drop(&mut self) {
+        self.handle.abort();
+    }
 }
 
 #[derive(Debug, Error)]
@@ -193,8 +226,19 @@ async fn computer_thread_inner(
                 let msg = msg.map_err(ComputerError::ReceiveMessage)?;
                 trace!("Received message: {:?}", msg);
                 let response = CCResponse::from_message(msg)?;
-                let resolver = resolvers.remove(&response.id).ok_or(ComputerError::UnknownResponse(response.id))?;
-                resolver.send(response).map_err(|res| ComputerError::DispatchResponse(res.id))?;
+                if let Some(resolver) = resolvers.remove(&response.id) {
+                    resolver.send(response).map_err(|res| ComputerError::DispatchResponse(res.id))?;
+                } else if response.id == Uuid::nil() { // nil Uuid means the socket was closed
+                    for (_, resolver) in std::mem::take(&mut resolvers).into_iter() {
+                        resolver.send(response.clone()).map_err(|res| ComputerError::DispatchResponse(res.id))?;
+                    }
+                } else {
+                    return Err(ComputerError::UnknownResponse(response.id));
+                }
+            }
+            else => {
+                // the socket was closed and the computer was dropped
+                break Ok(());
             }
         }
     }

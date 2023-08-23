@@ -31,23 +31,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Server listening, waiting for connection...");
 
-    let computer = server.wait_for_connection().await?;
+    let computer = server.wait_for_connection_from("testing").await?;
 
-    info!("Connected. Sending echo requests...");
+    let peripheral = computer.find_peripheral("monitor_0").await?;
 
-    let chars_100kb = [b'x'; 100 * 1024].to_vec();
-    // let chars_128kb = [b'x'; 128 * 1024].to_vec();
-    // let chars_200kb = [b'x'; 200 * 1024].to_vec();
+    let monitor: Monitor = peripheral.into_wrapped().await?;
 
-    computer
-        .echo(String::from_utf8(chars_100kb).unwrap())
-        .await?;
-    // computer
-    //     .echo(String::from_utf8(chars_128kb).unwrap())
-    //     .await?;
-    // computer
-    //     .echo(String::from_utf8(chars_200kb).unwrap())
-    //     .await?;
+    monitor.set_background_color(Color::Black).await?;
+    monitor.set_text_color(Color::White).await?;
+    monitor.clear().await?;
+    monitor.set_cursor_pos(1, 1).await?;
+
+    for color in Color::colors() {
+        monitor.set_background_color(color).await?;
+        monitor.write(" ").await?;
+    }
 
     Ok(())
 }

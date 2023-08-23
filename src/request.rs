@@ -43,6 +43,7 @@ impl CCRequestInner {
 #[derive(Debug, Serialize)]
 #[serde(tag = "kind", content = "data")]
 pub enum CCRequestKind {
+    Handshake,
     Echo(String),
     ConnectPeripheral(String),
     CallPeripheral {

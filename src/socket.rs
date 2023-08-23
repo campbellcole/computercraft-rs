@@ -5,7 +5,7 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite::Error as WsError};
 
-use crate::computer::Computer;
+use crate::{computer::Computer, error::Error};
 
 #[derive(Debug, Error)]
 pub enum SocketError {
@@ -15,6 +15,8 @@ pub enum SocketError {
     ConnectError(std::io::Error),
     #[error("Failed to accept connection: {0}")]
     AcceptConnection(WsError),
+    #[error("Failed to create new computer handle: {0}")]
+    ComputerError(#[from] Error),
 }
 
 pub async fn socket_thread(addr: impl ToSocketAddrs, tx: UnboundedSender<Computer>) {
@@ -38,7 +40,7 @@ pub async fn socket_thread_inner(
         let ws = accept_async(stream)
             .await
             .map_err(SocketError::AcceptConnection)?;
-        let computer = Computer::new(ws);
+        let computer = Computer::new(ws).await?;
         tx.send(computer).unwrap();
     }
 }
