@@ -27,7 +27,43 @@ macro_rules! generate_wrapped_fn {
     };
 }
 
+use async_trait::async_trait;
 pub(crate) use generate_wrapped_fn;
+
+#[async_trait]
+pub trait IntoWrappedPeripheral<W> {
+    async fn into_wrapped(self) -> crate::error::Result<W>;
+}
+
+macro_rules! generate_wrapper_impl {
+    ($wrapper_ty:ident = $expected_ty:literal) => {
+        #[derive(Debug)]
+        pub struct $wrapper_ty<'a> {
+            inner: Peripheral<'a>,
+        }
+
+        #[async_trait]
+        impl<'a> IntoWrappedPeripheral<$wrapper_ty<'a>> for Peripheral<'a> {
+            async fn into_wrapped(self) -> $crate::error::Result<$wrapper_ty<'a>> {
+                let ty = self
+                    .computer
+                    .get_peripheral_type(self.address.clone())
+                    .await?;
+
+                if ty != $expected_ty {
+                    return Err($crate::error::Error::WrongPeripheralType(
+                        ty,
+                        $expected_ty.into(),
+                    ));
+                }
+
+                Ok($wrapper_ty { inner: self })
+            }
+        }
+    };
+}
+
+pub(crate) use generate_wrapper_impl;
 
 pub(crate) mod prelude {
     pub use async_trait::async_trait;
@@ -35,7 +71,9 @@ pub(crate) mod prelude {
 
     pub(crate) use crate::{
         error::Result,
-        peripheral::{generate_wrapper_impl, IntoWrappedPeripheral, Peripheral},
-        wrappers::{generate_wrapped_fn, shared::color::Color},
+        peripheral::Peripheral,
+        wrappers::{
+            generate_wrapped_fn, generate_wrapper_impl, shared::color::Color, IntoWrappedPeripheral,
+        },
     };
 }

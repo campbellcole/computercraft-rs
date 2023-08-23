@@ -2,12 +2,7 @@
 //! as they are added.
 
 use computercraft::{
-    peripheral::IntoWrappedPeripheral,
-    wrappers::{
-        ap::{colony_integrator::ColonyIntegrator, rs_bridge::RsBridge},
-        monitor::Monitor,
-        shared::color::Color,
-    },
+    wrappers::{monitor::Monitor, shared::color::Color, IntoWrappedPeripheral},
     Server,
 };
 use tracing_subscriber::prelude::*;

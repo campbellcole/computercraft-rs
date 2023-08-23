@@ -1,6 +1,5 @@
 use computercraft::{
-    peripheral::IntoWrappedPeripheral,
-    wrappers::{monitor::Monitor, shared::color::Color},
+    wrappers::{monitor::Monitor, shared::color::Color, IntoWrappedPeripheral},
     Server,
 };
 

@@ -23,6 +23,7 @@ use crate::{
     response::{CCResponse, CCResponseKind, ParseResponseError},
 };
 
+#[derive(Debug)]
 pub struct Computer {
     inner: Arc<ComputerInner>,
     computer_info: OnceLock<ComputerInfo>,
@@ -178,6 +179,7 @@ pub struct ComputerInfo {
     pub advanced: bool,
 }
 
+#[derive(Debug)]
 struct ComputerInner {
     handle: JoinHandle<()>,
     tx: UnboundedSender<CCRequest>,

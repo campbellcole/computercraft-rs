@@ -1,4 +1,7 @@
-use computercraft::{peripheral::IntoWrappedPeripheral, wrappers::printer::Printer, Server};
+use computercraft::{
+    wrappers::{printer::Printer, IntoWrappedPeripheral},
+    Server,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
