@@ -59,7 +59,7 @@ if [ ! -d "$COMPUTER_DIR" ]; then
 fi
 
 ESCAPE_ROPE="$(pwd)"
-
+# geronimo
 cd "$COMPUTER_DIR"
 
 FILES=("worker.lua" "worker")
