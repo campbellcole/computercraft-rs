@@ -1,5 +1,7 @@
 use serde_json::Value;
 
+use crate::wrappers::lua_compat::LuaVec;
+
 use super::Citizen;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,8 +11,7 @@ pub struct RecruitCost {
     pub count: usize,
     pub max_stack_size: usize,
     pub display_name: String,
-    #[serde(deserialize_with = "crate::wrappers::lua_compat::deserialize_with")]
-    pub tags: Vec<String>,
+    pub tags: LuaVec<String>,
     pub nbt: Value,
 }
 

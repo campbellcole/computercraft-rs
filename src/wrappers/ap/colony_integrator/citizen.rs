@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::wrappers::lua_compat::LuaVec;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Age {
@@ -65,8 +67,7 @@ pub struct Citizen {
     pub is_asleep: bool,
     pub is_idle: bool,
     pub state: String,
-    #[serde(deserialize_with = "crate::wrappers::lua_compat::deserialize_with")]
-    pub children: Vec<String>,
+    pub children: LuaVec<String>,
     pub skills: HashMap<String, Skill>,
     pub work: Option<Work>,
     pub home: Option<Home>,

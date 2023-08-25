@@ -1,15 +1,32 @@
-use crate::wrappers::prelude::*;
+use crate::{error::Error, wrappers::prelude::*};
 
 mod item;
 pub use item::*;
 mod filter;
 pub use filter::*;
+mod pattern;
+pub use pattern::*;
 
 generate_wrapper_impl!(RsBridge = "rsBridge");
 
 impl<'a> RsBridge<'a> {
     pub async fn list_items(&self) -> Result<Vec<Item>> {
         self.inner.call_method_with("listItems", Value::Null).await
+    }
+
+    pub async fn get_pattern(&self, item: RsFilter) -> Result<Option<Pattern>> {
+        match self.inner.call_method_with("getPattern", vec![item]).await {
+            Ok(v) => Ok(Some(v)),
+            #[cfg(not(feature = "debug"))]
+            Err(Error::NoReturnValues) => Ok(None),
+            #[cfg(not(feature = "debug"))]
+            Err(err) => Err(err),
+            #[cfg(feature = "debug")]
+            Err(err) => match err.downcast_ref::<Error>().unwrap() {
+                Error::NoReturnValues => Ok(None),
+                _ => Err(err),
+            },
+        }
     }
 
     generate_wrapped_fn!(

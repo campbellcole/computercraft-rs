@@ -1,4 +1,4 @@
-use crate::wrappers::prelude::*;
+use crate::wrappers::{lua_compat::LuaVec, prelude::*};
 
 mod citizen;
 pub use citizen::*;
@@ -10,7 +10,7 @@ pub use request::*;
 generate_wrapper_impl!(ColonyIntegrator = "colonyIntegrator");
 
 impl<'a> ColonyIntegrator<'a> {
-    pub async fn get_citizens(&self) -> Result<Vec<Citizen>> {
+    pub async fn get_citizens(&self) -> Result<LuaVec<Citizen>> {
         self.inner
             .call_method_with("getCitizens", Value::Null)
             .await
@@ -21,7 +21,7 @@ impl<'a> ColonyIntegrator<'a> {
         [Value::Bool(b)] => Ok(*b)
     );
 
-    pub async fn get_requests(&self) -> Result<Vec<ColonyRequest>> {
+    pub async fn get_requests(&self) -> Result<LuaVec<ColonyRequest>> {
         self.inner
             .call_method_with("getRequests", Value::Null)
             .await

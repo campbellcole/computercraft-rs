@@ -21,7 +21,7 @@ macro_rules! generate_wrapped_fn {
         pub async fn $fn_name(&self$(, $arg_ident: $arg_ty)*) -> Result<$return_ty> {
             match &self.inner.call_method(stringify!($remote_fn), $remote_arg).await?[..] {
                 $arm => $ret,
-                ret => Err($crate::error::Error::UnexpectedData(ret.to_vec())),
+                ret => $crate::debug_feature!(Err($crate::error::Error::UnexpectedData(ret.to_vec()))),
             }
         }
     };
@@ -51,10 +51,10 @@ macro_rules! generate_wrapper_impl {
                     .await?;
 
                 if ty != $expected_ty {
-                    return Err($crate::error::Error::WrongPeripheralType(
+                    return $crate::debug_feature!(Err($crate::error::Error::WrongPeripheralType(
                         ty,
                         $expected_ty.into(),
-                    ));
+                    )));
                 }
 
                 Ok($wrapper_ty { inner: self })

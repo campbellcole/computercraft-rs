@@ -2,8 +2,28 @@
 //! In places where we are specifically expecting an array, we can use this deserializer to ensure
 //! serde doesn't get hung up on the fact that our "array" is actually an empty object.
 
-use serde::de::{Deserialize, Deserializer, Error, Visitor};
+use std::ops::{Deref, DerefMut};
+
+use serde::de::{Deserialize, DeserializeOwned, Deserializer, Error, Visitor};
 use serde_json::Value;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct LuaVec<T: DeserializeOwned>(#[serde(deserialize_with = "deserialize_with")] pub Vec<T>);
+
+impl<T: DeserializeOwned> Deref for LuaVec<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: DeserializeOwned> DerefMut for LuaVec<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 #[derive(Debug)]
 pub(crate) enum EmptyVecOrEmptyObject<T> {

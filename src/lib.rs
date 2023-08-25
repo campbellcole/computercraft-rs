@@ -114,3 +114,19 @@ impl ServerInner {
         }
     }
 }
+
+#[cfg(feature = "debug")]
+macro_rules! debug_feature {
+    ($result:expr) => {
+        $result.map_err(Into::into)
+    };
+}
+
+#[cfg(not(feature = "debug"))]
+macro_rules! debug_feature {
+    ($result:expr) => {
+        $result
+    };
+}
+
+pub(crate) use debug_feature;

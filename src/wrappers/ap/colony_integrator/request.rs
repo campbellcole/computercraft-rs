@@ -1,3 +1,5 @@
+use crate::wrappers::lua_compat::LuaVec;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestedItem {
@@ -5,8 +7,7 @@ pub struct RequestedItem {
     pub count: usize,
     pub max_stack_size: usize,
     pub display_name: String,
-    #[serde(deserialize_with = "crate::wrappers::lua_compat::deserialize_with")]
-    pub tags: Vec<String>,
+    pub tags: LuaVec<String>,
     // #[cfg(feature = "fastnbt")]
     // pub nbt: fastnbt::Value,
     // #[cfg(not(feature = "fastnbt"))]
@@ -23,6 +24,5 @@ pub struct ColonyRequest {
     pub count: usize,
     pub min_count: usize,
     pub target: String,
-    #[serde(deserialize_with = "crate::wrappers::lua_compat::deserialize_with")]
-    pub items: Vec<RequestedItem>,
+    pub items: LuaVec<RequestedItem>,
 }

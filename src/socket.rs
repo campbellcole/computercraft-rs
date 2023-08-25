@@ -15,8 +15,12 @@ pub enum SocketError {
     ConnectError(std::io::Error),
     #[error("Failed to accept connection: {0}")]
     AcceptConnection(WsError),
+    #[cfg(not(feature = "debug"))]
     #[error("Failed to create new computer handle: {0}")]
     ComputerError(#[from] Error),
+    #[cfg(feature = "debug")]
+    #[error("Failed to create a new computer handle: {0}")]
+    ComputerError(#[from] eyre::Report),
 }
 
 pub async fn socket_thread(addr: impl ToSocketAddrs, tx: UnboundedSender<Computer>) {

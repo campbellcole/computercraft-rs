@@ -39,4 +39,8 @@ pub enum Error {
     SerdeError(#[from] serde_json::Error),
 }
 
+#[cfg(not(feature = "debug"))]
 pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+#[cfg(feature = "debug")]
+pub type Result<T, E = eyre::Report> = std::result::Result<T, E>;

@@ -17,6 +17,7 @@ use tokio_tungstenite::{tungstenite::Error as WsError, WebSocketStream};
 use uuid::Uuid;
 
 use crate::{
+    debug_feature,
     error::{Error, Result},
     peripheral::{Peripheral, PeripheralCallResult},
     request::{CCRequest, CCRequestKind, PeripheralArgs},
@@ -39,7 +40,7 @@ macro_rules! impl_requests {
                 $(#[$meta])?
                 $fn_vis async fn $name(&self, $($arg_ident: $arg_type),*) -> Result<$return_type> {
                     match self.send_raw(CCRequestKind::$variant($($arg_ident),*)).await?.response {
-                        CCResponseKind::Disconnected => Err(Error::Disconnected),
+                        CCResponseKind::Disconnected => debug_feature!(Err(Error::Disconnected)),
                         CCResponseKind::$variant(res) => Ok(res),
                         _ => unreachable!("request was resolved with a response of the wrong kind!"),
                     }
@@ -72,12 +73,12 @@ impl Computer {
                     .map_err(|_| Error::HandShookTwice)?;
                 Ok(())
             }
-            _ => Err(Error::WrongResponseType(shake)),
+            _ => debug_feature!(Err(Error::WrongResponseType(shake))),
         }
     }
 
     pub fn computer_info(&self) -> Result<&ComputerInfo> {
-        self.computer_info.get().ok_or(Error::HandshakeFailed)
+        debug_feature!(self.computer_info.get().ok_or(Error::HandshakeFailed))
     }
 
     pub async fn find_peripheral(&self, address: impl ToString) -> Result<Peripheral<'_>> {
@@ -89,7 +90,7 @@ impl Computer {
                 address,
             })
         } else {
-            Err(Error::PeripheralNotFound(address))
+            debug_feature!(Err(Error::PeripheralNotFound(address)))
         }
     }
 
@@ -99,7 +100,7 @@ impl Computer {
             .tx
             .send(request)
             .map_err(|_| Error::ComputerThreadFailed)?;
-        resolver.await.map_err(|_| Error::ResolverDropped)
+        debug_feature!(resolver.await.map_err(|_| Error::ResolverDropped))
     }
 
     pub(crate) async fn peripheral_call_method<S: PeripheralArgs>(
@@ -116,7 +117,7 @@ impl Computer {
             })
             .await?;
         match res.response {
-            CCResponseKind::Disconnected => Err(Error::Disconnected),
+            CCResponseKind::Disconnected => debug_feature!(Err(Error::Disconnected)),
             CCResponseKind::CallPeripheral {
                 success,
                 error,
@@ -125,10 +126,10 @@ impl Computer {
                 if success {
                     Ok(result.unwrap_or_default())
                 } else {
-                    Err(Error::LuaError(error.unwrap_or_default()))
+                    debug_feature!(Err(Error::LuaError(error.unwrap_or_default())))
                 }
             }
-            _ => Err(Error::WrongResponseType(res)),
+            _ => debug_feature!(Err(Error::WrongResponseType(res))),
         }
     }
 
@@ -139,9 +140,12 @@ impl Computer {
         args: S,
     ) -> Result<T> {
         match &self.peripheral_call_method(address, method, args).await?[..] {
+            #[cfg(not(feature = "debug"))]
             [val] => Ok(T::deserialize(val)?),
-            [] => Err(Error::NoReturnValues),
-            _ => Err(Error::MultipleReturnValues),
+            #[cfg(feature = "debug")]
+            [val] => Ok(serde_path_to_error::deserialize(val)?),
+            [] => debug_feature!(Err(Error::NoReturnValues)),
+            _ => debug_feature!(Err(Error::MultipleReturnValues)),
         }
     }
 
@@ -153,7 +157,11 @@ impl Computer {
     ) -> Result<T> {
         let val = Value::Array(self.peripheral_call_method(address, method, args).await?);
 
-        Ok(T::deserialize(val)?)
+        #[cfg(not(feature = "debug"))]
+        return Ok(T::deserialize(val)?);
+
+        #[cfg(feature = "debug")]
+        return Ok(serde_path_to_error::deserialize(val)?);
     }
 }
 
